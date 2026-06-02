@@ -1,0 +1,14 @@
+.venv/
+.idea/
+build/
+dist/
+tmp/
+__pycache__/
+*.py[cod]
+*.spec
+modules_log.txt
+scan_history.json
+cleanup_log.json
+scan_state.json
+file_hashes.json
+backups/

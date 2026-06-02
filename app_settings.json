@@ -1,0 +1,14 @@
+{
+  "dark_mode": false,
+  "schedule": {
+    "enabled": false,
+    "hour": "02",
+    "minute": "00",
+    "interval_days": "15",
+    "categories": {
+      "temp": true,
+      "browser_cache": true
+    },
+    "last_run_date": ""
+  }
+}
