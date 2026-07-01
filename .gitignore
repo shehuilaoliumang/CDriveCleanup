@@ -12,3 +12,12 @@ cleanup_log.json
 scan_state.json
 file_hashes.json
 backups/
+._td_test/
+._td_test*/
+._test_runtime_tmp_single/
+_run_test_workspace/
+_run_tests_tmp/
+_run_tmp_check/
+_test_runtime_tmp/
+._test_runtime_tmp/
+tmp_objects/

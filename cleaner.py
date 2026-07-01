@@ -121,6 +121,9 @@ class DiskCleaner:
         except:
             return None
 
+    def backup_file(self, filepath, backup_dir=None):
+        return self._backup_file(filepath, backup_dir)
+
     def format_size(self, size_bytes):
         for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
             if size_bytes < 1024.0:

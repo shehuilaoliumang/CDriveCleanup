@@ -745,11 +745,21 @@ F1      - 显示此帮助
         # 创建主滚动条
         self.main_scrollbar = ttk.Scrollbar(self.root, orient=tk.VERTICAL)
         self.main_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.main_h_scrollbar = ttk.Scrollbar(self.root, orient=tk.HORIZONTAL)
+        self.main_h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
         
         # 创建主画布
-        self.main_canvas = tk.Canvas(self.root, yscrollcommand=self.main_scrollbar.set, highlightthickness=0, borderwidth=0)
+        self.main_canvas = tk.Canvas(
+            self.root,
+            yscrollcommand=self.main_scrollbar.set,
+            xscrollcommand=self.main_h_scrollbar.set,
+            highlightthickness=0,
+            borderwidth=0
+        )
         self.main_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.main_scrollbar.config(command=self.main_canvas.yview)
+        self.main_h_scrollbar.config(command=self.main_canvas.xview)
         
         # 创建主框架
         self.main_frame = ttk.Frame(self.main_canvas)
@@ -803,6 +813,18 @@ F1      - 显示此帮助
         
         # 强制刷新UI
         self.root.update_idletasks()
+
+    def _create_tree_with_scrollbars(self, parent, tree, pack_args=None):
+        container = ttk.Frame(parent)
+        if pack_args is None:
+            pack_args = {"fill": tk.BOTH, "expand": True}
+        v_scrollbar = ttk.Scrollbar(container, orient=tk.VERTICAL, command=tree.yview)
+        h_scrollbar = ttk.Scrollbar(container, orient=tk.HORIZONTAL, command=tree.xview)
+        tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        tree.pack(side=tk.LEFT, fill=pack_args.get("fill", tk.BOTH), expand=pack_args.get("expand", True))
+        v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
+        return container
     
     def _on_frame_configure(self, event):
         self.main_canvas.configure(scrollregion=self.main_canvas.bbox('all'))
@@ -929,12 +951,11 @@ F1      - 显示此帮助
         self.lf_tree.column("file_path", width=650)
         self.lf_tree.column("file_size", width=120)
         self.lf_tree.column("formatted_size", width=120)
+        lf_tree_frame = ttk.Frame(large_file_frame)
+        lf_tree_frame.pack(fill=tk.BOTH, expand=True)
 
-        lf_scrollbar = ttk.Scrollbar(large_file_frame, orient=tk.VERTICAL, command=self.lf_tree.yview)
-        self.lf_tree.configure(yscrollcommand=lf_scrollbar.set)
-
-        self.lf_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        lf_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        lf_scroll_container = self._create_tree_with_scrollbars(lf_tree_frame, self.lf_tree, pack_args={"fill": tk.BOTH, "expand": True})
+        lf_scroll_container.pack(fill=tk.BOTH, expand=True)
         
         if self.scan_state:
             self.resume_btn.config(state=tk.NORMAL)
@@ -1086,12 +1107,10 @@ F1      - 显示此帮助
         self.dup_tree.column("size", width=120)
         self.dup_tree.column("count", width=100)
         self.dup_tree.column("files", width=600)
-
-        dup_scrollbar = ttk.Scrollbar(dup_list_frame, orient=tk.VERTICAL, command=self.dup_tree.yview)
-        self.dup_tree.configure(yscrollcommand=dup_scrollbar.set)
-
-        self.dup_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        dup_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        dup_tree_frame = ttk.Frame(dup_list_frame)
+        dup_tree_frame.pack(fill=tk.BOTH, expand=True)
+        dup_scroll_container = self._create_tree_with_scrollbars(dup_tree_frame, self.dup_tree, pack_args={"fill": tk.BOTH, "expand": True})
+        dup_scroll_container.pack(fill=tk.BOTH, expand=True)
 
     def _browse_duplicate_directory(self):
         directory = filedialog.askdirectory(initialdir='C:\\', title="选择要扫描的目录")
@@ -2003,7 +2022,10 @@ F1      - 显示此帮助
         self.backup_tree.column('original', width=150)
         self.backup_tree.column('size', width=80)
         self.backup_tree.column('date', width=150)
-        self.backup_tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        backup_tree_frame = ttk.Frame(backup_frame)
+        backup_tree_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        backup_scroll_container = self._create_tree_with_scrollbars(backup_tree_frame, self.backup_tree, pack_args={"fill": tk.BOTH, "expand": True})
+        backup_scroll_container.pack(fill=tk.BOTH, expand=True)
 
         backup_action_frame = ttk.Frame(backup_frame)
         backup_action_frame.pack(fill=tk.X, padx=10, pady=5)
@@ -2114,11 +2136,10 @@ F1      - 显示此帮助
         self.scan_history_tree.column("file_count", width=120)
         self.scan_history_tree.column("total_size", width=150)
 
-        scan_scrollbar = ttk.Scrollbar(scan_history_list_frame, orient=tk.VERTICAL, command=self.scan_history_tree.yview)
-        self.scan_history_tree.configure(yscrollcommand=scan_scrollbar.set)
-
-        self.scan_history_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scan_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        scan_tree_frame = ttk.Frame(scan_history_list_frame)
+        scan_tree_frame.pack(fill=tk.BOTH, expand=True)
+        scan_scroll_container = self._create_tree_with_scrollbars(scan_tree_frame, self.scan_history_tree, pack_args={"fill": tk.BOTH, "expand": True})
+        scan_scroll_container.pack(fill=tk.BOTH, expand=True)
         self._refresh_scan_history()
 
         cleanup_history_frame = ttk.Frame(history_notebook)
@@ -2146,11 +2167,10 @@ F1      - 显示此帮助
         self.cleanup_history_tree.column("freed_size", width=120)
         self.cleanup_history_tree.column("backup", width=80)
 
-        cleanup_scrollbar = ttk.Scrollbar(cleanup_history_list_frame, orient=tk.VERTICAL, command=self.cleanup_history_tree.yview)
-        self.cleanup_history_tree.configure(yscrollcommand=cleanup_scrollbar.set)
-
-        self.cleanup_history_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        cleanup_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        cleanup_tree_frame = ttk.Frame(cleanup_history_list_frame)
+        cleanup_tree_frame.pack(fill=tk.BOTH, expand=True)
+        cleanup_scroll_container = self._create_tree_with_scrollbars(cleanup_tree_frame, self.cleanup_history_tree, pack_args={"fill": tk.BOTH, "expand": True})
+        cleanup_scroll_container.pack(fill=tk.BOTH, expand=True)
         self._refresh_cleanup_history()
 
     def _create_settings_tab(self, notebook):
@@ -2185,15 +2205,15 @@ F1      - 显示此帮助
         minute_spin = ttk.Spinbox(time_frame, from_=0, to=59, width=3, textvariable=self.schedule_minute, format="%02.0f")
         minute_spin.pack(side=tk.LEFT, padx=2)
 
-        ttk.Label(time_frame, text="  执行间隔: 每").pack(side=tk.LEFT, padx=(12, 2))
+        ttk.Label(time_frame, text="  执行间隔: ").pack(side=tk.LEFT, padx=(12, 2))
         self.schedule_interval_days = tk.StringVar(value=self.saved_schedule_interval_days)
         interval_spin = ttk.Spinbox(time_frame, from_=1, to=365, width=4, textvariable=self.schedule_interval_days)
         interval_spin.pack(side=tk.LEFT, padx=2)
         ttk.Label(time_frame, text="天").pack(side=tk.LEFT, padx=2)
 
         ttk.Button(time_frame, text="每周", command=lambda: self.schedule_interval_days.set("7")).pack(side=tk.LEFT, padx=(10, 2))
+        ttk.Button(time_frame, text="10天", command=lambda: self.schedule_interval_days.set("10")).pack(side=tk.LEFT, padx=2)
         ttk.Button(time_frame, text="半月", command=lambda: self.schedule_interval_days.set("15")).pack(side=tk.LEFT, padx=2)
-
         self.schedule_categories = {
             'temp': tk.BooleanVar(value=self.saved_schedule_categories.get('temp', True)),
             'browser_cache': tk.BooleanVar(value=self.saved_schedule_categories.get('browser_cache', True)),
@@ -2271,12 +2291,10 @@ F1      - 显示此帮助
         self.whitelist_tree = ttk.Treeview(whitelist_frame, columns=whitelist_columns, show="headings", selectmode="extended")
         self.whitelist_tree.heading("path", text="路径")
         self.whitelist_tree.column("path", width=700)
-
-        whitelist_scrollbar = ttk.Scrollbar(whitelist_frame, orient=tk.VERTICAL, command=self.whitelist_tree.yview)
-        self.whitelist_tree.configure(yscrollcommand=whitelist_scrollbar.set)
-
-        self.whitelist_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        whitelist_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        whitelist_tree_frame = ttk.Frame(whitelist_frame)
+        whitelist_tree_frame.pack(fill=tk.BOTH, expand=True)
+        whitelist_scroll_container = self._create_tree_with_scrollbars(whitelist_tree_frame, self.whitelist_tree, pack_args={"fill": tk.BOTH, "expand": True})
+        whitelist_scroll_container.pack(fill=tk.BOTH, expand=True)
         self._refresh_whitelist_display()
 
     def _browse_directory(self):
@@ -2473,10 +2491,15 @@ F1      - 显示此帮助
                 try:
                     if os.path.exists(file_path):
                         size = os.path.getsize(file_path)
+                        if backup:
+                            backup_path = self.cleaner.backup_file(file_path)
+                            if not backup_path:
+                                failed_count += 1
+                                continue
                         os.remove(file_path)
                         deleted_count += 1
                         freed_size += size
-                except Exception as e:
+                except Exception:
                     failed_count += 1
 
             messagebox.showinfo("完成", f"清理完成！\n成功删除: {deleted_count} 个文件\n释放空间: {self.cleaner.format_size(freed_size)}\n失败: {failed_count} 个")
@@ -3107,15 +3130,17 @@ F1      - 显示此帮助
             return
 
         self._init_cleanup_progress(len(selected_categories))
-
-        thread = threading.Thread(target=self._safe_cleanup_thread, args=(selected_categories,))
+        backup = bool(self.backup_var.get())
+        thread = threading.Thread(
+            target=self._safe_cleanup_thread,
+            args=(selected_categories, backup),
+        )
         thread.daemon = True
         thread.start()
 
-    def _safe_cleanup_thread(self, selected_categories):
+    def _safe_cleanup_thread(self, selected_categories, backup):
         total_deleted = 0
         total_freed = 0
-        backup = self.backup_var.get()
         total = len(selected_categories)
 
         for i, category in enumerate(selected_categories):
@@ -3179,8 +3204,9 @@ F1      - 显示此帮助
         
         now = datetime.datetime.now()
         target_hour, target_minute = self._get_schedule_time()
+        target_time = datetime.datetime(now.year, now.month, now.day, target_hour, target_minute)
 
-        if now.hour == target_hour and now.minute == target_minute and self._schedule_due(now.date()):
+        if now >= target_time and self._schedule_due(now.date()):
             self._run_scheduled_cleanup()
         
         self.schedule_timer = self.root.after(60000, self._check_schedule)
@@ -3221,9 +3247,13 @@ F1      - 显示此帮助
             interval_text = "每天"
         elif interval == 7:
             interval_text = "每周"
+        elif interval == 10:
+            interval_text = "每10天"
+        elif interval == 15:
+            interval_text = "半月"
         else:
-            interval_text = f"每 {interval} 天"
-        return f"定时清理: 已启用 ({interval_text} {hour:02d}:{minute:02d})"
+            interval_text = f"每{interval}天"
+        return f"定时清理: {interval_text}，执行时间 {hour:02d}:{minute:02d}"
 
     def _run_scheduled_cleanup(self):
         if self._scheduled_cleanup_active:
@@ -3233,14 +3263,13 @@ F1      - 显示此帮助
             return
 
         self._scheduled_cleanup_active = True
-        self.last_schedule_run_date = datetime.date.today().isoformat()
-        self._save_settings()
         thread = threading.Thread(target=self._scheduled_cleanup_thread, args=(categories,), daemon=True)
         thread.start()
 
     def _scheduled_cleanup_thread(self, categories):
         total_deleted = 0
         total_freed = 0
+        error_message = None
 
         try:
             for category in categories:
@@ -3248,15 +3277,28 @@ F1      - 显示此帮助
                 total_deleted += result['deleted_count']
                 total_freed += result['freed_size']
                 self.root.after(0, lambda r=result, c=category: self._append_cleanup_log(
-                    f"[定时清理] {c}: 删除 {r['deleted_count']} 个文件, 释放 {r['freed_size_formatted']}"
+                    f"[定时清理] {c}: 删除 {r['deleted_count']} 个文件，释放 {r['freed_size_formatted']}"
                 ))
+        except Exception as exc:
+            error_message = str(exc)
 
+        self.root.after(
+            0,
+            lambda cs=categories, td=total_deleted, tf=total_freed, er=error_message:
+            self._finish_scheduled_cleanup(cs, td, tf, er)
+        )
+
+    def _finish_scheduled_cleanup(self, categories, total_deleted, total_freed, error_message=None):
+        if error_message:
+            self._append_cleanup_log(f"[定时清理] 执行异常: {error_message}")
+        else:
             self._add_cleanup_log_entry(categories, total_deleted, total_freed, True)
-            self.root.after(0, lambda: self._append_cleanup_log(
-                f"\n[定时清理] 总计: 删除 {total_deleted} 个文件, 释放 {self.cleaner.format_size(total_freed)}"
-            ))
-        finally:
-            self._scheduled_cleanup_active = False
+            self.last_schedule_run_date = datetime.date.today().isoformat()
+            self._save_settings()
+            self._append_cleanup_log(
+                f"[定时清理] 汇总: 删除 {total_deleted} 个文件，释放 {self.cleaner.format_size(total_freed)}"
+            )
+        self._scheduled_cleanup_active = False
 
     def _add_whitelist_file(self):
         file_path = filedialog.askopenfilename(title="选择要添加到白名单的文件")
@@ -3452,7 +3494,12 @@ F1      - 显示此帮助
 
         self._init_cleanup_progress(len(selected_categories))
 
-        thread = threading.Thread(target=self._cleanup_thread, args=(selected_categories,))
+        backup = bool(self.backup_var.get())
+        simulate = bool(self.simulate_var.get())
+        thread = threading.Thread(
+            target=self._cleanup_thread,
+            args=(selected_categories, backup, simulate),
+        )
         thread.daemon = True
         thread.start()
 
@@ -3466,11 +3513,9 @@ F1      - 显示此帮助
         self.root.after(0, lambda: self.cleanup_progress.config(value=progress_value))
         self.root.after(0, lambda: self.cleanup_status_label.config(text=status_text))
 
-    def _cleanup_thread(self, selected_categories):
+    def _cleanup_thread(self, selected_categories, backup, simulate):
         total_deleted = 0
         total_freed = 0
-        backup = self.backup_var.get()
-        simulate = self.simulate_var.get()
         total = len(selected_categories)
 
         for i, category in enumerate(selected_categories):
