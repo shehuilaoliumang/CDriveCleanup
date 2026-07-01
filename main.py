@@ -742,6 +742,10 @@ F1      - 显示此帮助
             return f"{bytes_value / (1024 * 1024 * 1024):.2f} GB"
 
     def _create_widgets(self):
+        # 优化主画布尺寸更新策略，避免构建过程频繁触发布局回流
+        self._main_canvas_update_job = None
+        self._main_canvas_last_width = 0
+
         # 创建主滚动条
         self.main_scrollbar = ttk.Scrollbar(self.root, orient=tk.VERTICAL)
         self.main_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -764,18 +768,15 @@ F1      - 显示此帮助
         # 创建主框架
         self.main_frame = ttk.Frame(self.main_canvas)
         self.main_canvas_window = self.main_canvas.create_window((0, 0), window=self.main_frame, anchor=tk.NW)
-        
-        # 绑定事件
-        def on_frame_configure(event):
-            self.main_canvas.configure(scrollregion=self.main_canvas.bbox('all'))
-        
-        self.main_frame.bind('<Configure>', on_frame_configure)
 
-        def on_canvas_configure(event):
-            if event.width > 0:
-                self.main_canvas.itemconfigure(self.main_canvas_window, width=event.width)
+        # 统一延迟更新主画布滚动区域，避免每次控件配置都触发布局计算
+        def schedule_canvas_reflow(*_):
+            if self._main_canvas_update_job is not None:
+                return
+            self._main_canvas_update_job = self.root.after_idle(self._refresh_main_canvas_layout)
 
-        self.main_canvas.bind('<Configure>', on_canvas_configure)
+        self.main_frame.bind('<Configure>', schedule_canvas_reflow)
+        self.main_canvas.bind('<Configure>', schedule_canvas_reflow)
         
         def on_mousewheel(event):
             self.main_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
@@ -813,6 +814,7 @@ F1      - 显示此帮助
         
         # 强制刷新UI
         self.root.update_idletasks()
+        self._refresh_main_canvas_layout()
 
     def _create_tree_with_scrollbars(self, parent, tree, pack_args=None):
         container = ttk.Frame(parent)
@@ -825,9 +827,27 @@ F1      - 显示此帮助
         v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
         return container
-    
-    def _on_frame_configure(self, event):
-        self.main_canvas.configure(scrollregion=self.main_canvas.bbox('all'))
+
+    def _refresh_main_canvas_layout(self):
+        self._main_canvas_update_job = None
+        try:
+            bbox = self.main_canvas.bbox('all')
+            if bbox:
+                self.main_canvas.configure(scrollregion=bbox)
+        except Exception:
+            return
+
+        try:
+            viewport_width = self.main_canvas.winfo_width()
+            if viewport_width <= 0:
+                return
+            content_width = self.main_frame.winfo_reqwidth()
+            target_width = max(viewport_width, content_width)
+            if target_width != self._main_canvas_last_width:
+                self.main_canvas.itemconfigure(self.main_canvas_window, width=target_width)
+                self._main_canvas_last_width = target_width
+        except Exception:
+            return
     
     def _on_mousewheel(self, event):
         self.main_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
